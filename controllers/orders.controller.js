@@ -197,7 +197,7 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
   //User's cart
   const currentCartUser = await Cart.findOne({
     attributes: { exclude: ["userId"] },
-    where: { userId: currentUser.id, status: "onGoing" },
+    where: { userId: currentUser.id, status: "onGoing" }, //
     include: [
       {
         //Produtcs in the cart
@@ -210,8 +210,9 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
   if (!currentCartUser) {
     return next(new AppError("You don't have a cart", 404));
   }
+  
   // Set Cart status to 'purchased'
-  await currentCartUser.update({ status: "purchased" });
+  await currentCartUser.update({ status: "onGoing" });
   // Create a new order
   const newOrder = await Order.create({
     userId: currentUser.id,
@@ -223,9 +224,8 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
   // 	await Product.findAll()
   // })
   // await Promise.all(promises)
-
   // Loop through the products array, for each product
-  const promises = currentCartUser.productInCart.map(async (product) => {
+  const promises = currentCartUser.productsInCarts.map(async (product) => {
     // Set productInCart status to 'purchased', search for cartId and productId
     const updatedProductInCart = await ProductInCart.findOne({
       where: { cartId: currentCartUser.id, productId: product.productId },
@@ -248,6 +248,7 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
       orderId: newOrder.id,
     });
   });
+
 
   await Promise.all(promises);
 
