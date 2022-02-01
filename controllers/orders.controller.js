@@ -210,7 +210,7 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
   if (!currentCartUser) {
     return next(new AppError("You don't have a cart", 404));
   }
-  
+
   // Set Cart status to 'purchased'
   await currentCartUser.update({ status: "onGoing" });
   // Create a new order
@@ -219,11 +219,6 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
     totalPrice: currentCartUser.totalPrice,
     date: new Date().toLocaleString(),
   });
-  // [Promise]
-  // const promises = products.map(async () => {
-  // 	await Product.findAll()
-  // })
-  // await Promise.all(promises)
   // Loop through the products array, for each product
   const promises = currentCartUser.productsInCarts.map(async (product) => {
     // Set productInCart status to 'purchased', search for cartId and productId
@@ -249,8 +244,17 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
     });
   });
 
-
   await Promise.all(promises);
 
   res.status(200).json({ status: "success" });
+});
+
+exports.getOrders = catchAsync(async (req, res, next) => {
+  const { currentUser } = req;
+
+  const allOrdersUser = await Order.findAll({
+    where: { userId: currentUser.id },
+  });
+
+  res.status(200).json({ status: "success", data: { allOrdersUser } });
 });
