@@ -10,11 +10,11 @@ const { catchAsync } = require("../utils/catchAsync");
 const { filterObj } = require("../utils/filterObj");
 const { AppError } = require("../utils/appError");
 const { formatUserCart } = require("../utils/queryFormat");
+const { Email } = require("../utils/email");
 
 exports.getUserCart = catchAsync(async (req, res, next) => {
   const { currentUser } = req;
   const cart = await Cart.findOne({
-    attributes: { exclude: ["userId", "status"] },
     where: { userId: currentUser.id, status: "onGoing" },
     include: [
       {
@@ -37,7 +37,7 @@ exports.getUserCart = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { cart: formattedCart },
+    data: { cart: cart },
   });
 });
 
@@ -192,6 +192,7 @@ exports.updateProductCart = catchAsync(async (req, res, next) => {
 });
 
 exports.purchaseOrder = catchAsync(async (req, res, next) => {
+  
   // Get user's cart and get the products of the cart
   const { currentUser } = req;
   //User's cart
@@ -203,6 +204,9 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
         //Produtcs in the cart
         model: ProductInCart,
         attributes: { exclude: ["cartId"] },
+        include: [{
+          model: Product
+        }]
       },
     ],
   });
@@ -212,13 +216,15 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
   }
 
   // Set Cart status to 'purchased'
-  await currentCartUser.update({ status: "onGoing" });
+  await currentCartUser.update({ status: "purchased" });
   // Create a new order
   const newOrder = await Order.create({
     userId: currentUser.id,
     totalPrice: currentCartUser.totalPrice,
     date: new Date().toLocaleString(),
   });
+
+  console.log('hello 1')
   // Loop through the products array, for each product
   const promises = currentCartUser.productsInCarts.map(async (product) => {
     // Set productInCart status to 'purchased', search for cartId and productId
@@ -236,7 +242,7 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
     await updatedProduct.update({ quantity: productQuantity });
 
     // Create productInOrder, pass orderId, productId, qty, price
-    await ProductInOrder.create({
+    return await ProductInOrder.create({
       productId: product.productId,
       quantity: product.quantity,
       price: product.price,
@@ -245,6 +251,21 @@ exports.purchaseOrder = catchAsync(async (req, res, next) => {
   });
 
   await Promise.all(promises);
+  console.log('hello 2')
+  //Get product info
+  // const cartProducts = await Product.findAll({
+  //   where: {id : currentCartUser.productId}
+  // })
+
+  // console.log(cartProducts)
+
+  //Send email to user
+  await new Email(currentUser.email).sendUsersOrder(
+    currentUser.name,
+    currentCartUser.productsInCarts,
+    newOrder.totalPrice
+
+  );
 
   res.status(200).json({ status: "success" });
 });

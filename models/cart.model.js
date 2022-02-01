@@ -20,7 +20,7 @@ const Cart = db.define(
 		},
 		status: {
 			type: DataTypes.STRING(20),
-			allowNull: 'false',
+			allowNull: false,
 			// onGoing | deleted | cancelled | purchased
 			defaultValue: 'onGoing',
 		},

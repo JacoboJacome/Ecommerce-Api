@@ -1,0 +1,21 @@
+extends base 
+
+block emailContent
+
+  h2 Hello #{userName}
+  p Your order was received and is about to be shipped.
+  p Here are the details of your purchase:
+  table.body(role='presentation' cellspacing='0' cellpadding='0' border='0')
+    tbody
+      tr
+        th Product
+        th Quantity
+        th Price 
+      each product in productsInCarts
+        tr 
+          td.align-center #{product.product.name}
+          td.align-center #{product.quantity}
+          td.align-center #{product.price}
+      tr
+        td.align-right.font-bold.total(colspan="2") Total
+        td.align-center.font-bold.total-price #{totalPrice}
